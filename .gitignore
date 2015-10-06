@@ -1,0 +1,6 @@
+.DS_Store
+_old/*
+testing/*
+*.pyc
+assets/harvesting/*
+assets/data/*
