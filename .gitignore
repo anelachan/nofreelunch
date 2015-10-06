@@ -4,3 +4,4 @@ testing/*
 *.pyc
 assets/harvesting/*
 assets/data/*
+README.txt
