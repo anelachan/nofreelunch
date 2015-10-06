@@ -1,0 +1,47 @@
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke: #000;
+}
+
+.tooltip {
+  top: 40px;
+  left: 720px;
+  width: 380px;
+  background-color: rgba(0,0,0,.05);
+  padding: 10px 10px 10px 10px;
+  overflow: scroll;
+  font-size: 1em;
+  line-height: 1.5em;
+}
+
+.label{
+  font-size: 1.3em;
+}
+
+.charts svg{
+	display:none;
+}
+
+.tooltip .axis {
+  font: 10px sans-serif;
+}
+
+.tooltip svg{
+  background-color: white;
+}
+
+.see-reviews-btn{
+  display: inline;
+}
+
+.review-text{
+  font-family: Georgia;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}

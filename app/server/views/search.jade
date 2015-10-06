@@ -1,0 +1,29 @@
+doctype html
+meta(charset="utf-8")
+html
+head
+	title No Free Lunch
+	link(type="text/css", rel="stylesheet",href="/vendor/bootstrap.min.css")
+	link(type="text/css", rel="stylesheet",href="/css/application.css")
+
+body
+	header
+		div(class="navbar navbar-fixed-top")
+			div(class="container")
+				div(class="row")
+					div(class="navbar-header")
+						div(id="logo")
+							a(href="/") No Free Lunch
+
+	div(class="container")
+		div(class="width-600")
+			h3 People who bought a #{category} mentioned:
+				h4
+					ul(class="feature-list")
+						-for(var i = 0; i < features.length; i++){
+							li "#{features[i]}"
+						-}
+						
+			a(href="/pickfeatures?category="+category,class="btn btn-primary",id="pick-features-btn") Pick Features
+
+			a(href="/exploretradeoffs?category="+category,class="btn btn-primary",id="explore-tradeoffs-btn") Explore Trade-offs

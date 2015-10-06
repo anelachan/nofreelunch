@@ -1,0 +1,38 @@
+.btn-relationship{
+  background-color: lightgray;
+  border-color: lightgray;
+  color: black;
+  display: none;
+}
+
+.btn-relationship:focus{
+  border-color: lightgray;
+  background-color: gray;
+  color: white;
+}
+
+.btn-relationship:hover{
+  background-color: gray;
+  border-color: lightgray;
+}
+
+#buttons{
+  height: 230px;
+  overflow-y: scroll;
+}
+
+#relationships{
+  line-height: .5em;
+  display: none;
+}
+
+#relationship-instructions{
+  line-height: .8em;
+  font-size: .8em;
+  font-style: italic;
+  margin-bottom: .5em;
+}
+
+#relationships button, #feature-buttons button{
+  margin: 5px 5px 5px 0px;
+}

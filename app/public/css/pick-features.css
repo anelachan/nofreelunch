@@ -1,0 +1,54 @@
+/* form */
+#pick-features-btn{
+  margin-right: 10px;
+}
+
+#get-score{
+  margin-top: 1em;
+  margin-bottom: 1em;
+  width: 250px;
+}
+
+#get-score h4{
+  width: 600px;
+}
+
+/* results */
+#you-selected h4{
+  color: gray;
+}
+
+
+
+#results{
+  height: 540px;
+}
+
+table{
+  display: block;
+  height: 490px;
+  overflow: hidden;
+}
+
+table tr th{
+  padding-left: 0;
+}
+
+table tr{
+  max-height: 62px;
+}
+
+/* table components */
+.score{
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.product-details{
+  width: 400px;
+}
+
+/* hidden at first*/
+#get-score .form-group:not(#choice-1-group), #you-selected, #results {
+  display: none;
+}

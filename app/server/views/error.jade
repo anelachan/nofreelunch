@@ -1,0 +1,28 @@
+doctype html
+meta(charset="utf-8")
+html
+head
+	title No Free Lunch
+	link(type="text/css", rel="stylesheet",href="/vendor/bootstrap.min.css")
+	link(type="text/css", rel="stylesheet",href="/css/application.css")
+
+body
+	header
+		div(class="navbar navbar-fixed-top")
+			div(class="container")
+				div(class="row")
+					div(class="navbar-header")
+						div(id="logo")
+							a(href="/") No Free Lunch
+
+	div(class="container")
+		div(class="width-600")
+			h3 Sorry, "#{category}" was not found in our database. 
+			h4 This prototype includes:
+			ul(class="feature-list")
+				li
+					a(href="search?category=space%20heater") space heater
+				li
+					a(href="search?category=drill") drill
+				li
+					a(href="search?category=wireless%20printer") wireless printer

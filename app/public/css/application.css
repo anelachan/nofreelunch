@@ -1,0 +1,75 @@
+/* MAIN BODY */
+
+body{
+  padding-top:50px;
+}
+
+.container{
+  position: fixed;
+  left: 80px;
+}
+
+.width-600{
+  width: 600px;
+}
+
+/* NAVBAR */
+
+.navbar {
+  background-image: none;
+  border-bottom: none;
+  background-color: white;
+}
+
+.navbar #logo {
+  margin-left: 15px;
+  font-size: 1.7em;
+  padding-top: 9px;
+  font-weight: bold;
+  line-height: 1;
+  margin-right: 15px;
+}
+
+#logo a{
+  color: black;
+}
+
+#logo a:hover{
+  color: gray;
+  text-decoration: none;
+}
+
+.currently-visited{
+  color: black;
+}
+
+/* SEARCH FORM */
+
+#main-search{
+  font-size: 3em;
+  width: 490px;
+  margin-right: auto;
+  margin-left: auto;
+  margin-top: 150px;
+}
+
+#search input{
+  width: 365px;
+}
+
+.feature-list {
+  list-style: none;
+  line-height: 1.5em;
+  margin-top: .5em;
+}
+
+/* GENERAL BUTTONS */
+
+.btn-primary {
+  margin: 0px 5px 0px 0px;
+}
+
+.btn:focus {
+  outline: none;
+}
+
