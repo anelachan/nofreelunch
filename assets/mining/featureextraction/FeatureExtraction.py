@@ -1,111 +1,162 @@
-# FeatureExtraction.py
-# Extractions useful features from a volume of review text
-# Handles tokenization and runs single word and phrasal extraction.
-# Depends on modules Reader, UnigramFinder and PhraseFinder.
+"""Extracts useful features from a volume of review text.
+Handles tokenization and runs single word and phrasal extraction.
+Needs modules Reader, UnigramFinder and PhraseFinder."""
 
-from Reader import *
-from UnigramFinder import *
-from PhraseFinder import *
+import gc
 import re
 import nltk
-import gc
-import pandas as pd # i think we can remove this
+import pandas as pd
+from Reader import Reader
+from UnigramFinder import UnigramFinder
+from PhraseFinder import PhraseFinder
+
 
 class FeatureExtraction(object):
 
-	def __init__(self,category,db):
+    def __init__(self, db, num_unigrams=10, max_features=22):
 
-		self.db = db
-		self.category = category
+        self.db = db
+        self.num_unigrams = num_unigrams
+        self.max_features = max_features
+        self.features = None
+        self.df = None
 
-		reviews = list(self.db.review.find({'category': category},
-			{'helpful_votes':1,'votes': 1,'review':1,'stars':1,'product_id':1}))
+    def index(self, category):
+        """Extract features and build an index of features in reviews"""
+        # get all reviews from one product category
+        reviews = self.reviews(self.db, category)
+        reviews = self.parse_reviews(reviews)
+        # join into 1 list of tokens
+        tokens = self.join_review_tokens(reviews)
+        features = self.extract_features(category, tokens)
 
-		# tokenize each review, add to review obj
-		for obj in reviews:
-			obj['tokens'] = Reader(obj['review']).words
-			obj['bigrams'] = list(nltk.bigrams(obj['tokens']))
-			obj['trigrams'] = list(nltk.trigrams(obj['tokens']))
+        # record if feature string in review - indexing
+        for obj in reviews:
+            for feature in features:
+                if feature.lower() in obj['review'].lower():
+                    obj[feature] = True
+                else:
+                    obj[feature] = False
+            # delete for some space saving
+            del obj['bigrams']
+            del obj['trigrams']
+            del obj['tokens']
+        gc.collect()
 
-		# concatenate the words together
-		words = list()
-		for obj in reviews:
-			words += obj['tokens']
+        # create review df
+        df = pd.DataFrame(reviews)
 
-		# run unigram and phrasal feature extraction
-		unigrams = UnigramFinder(words,category).unigrams[:15]
-		phrases = PhraseFinder(words).phrases
+        # prune those voted not helpful
+        df['percent_helpful'] = df['helpful_votes'] / df['votes']
+        df['percent_helpful'] = df['percent_helpful'].fillna(.5)
+        mean_ph = df['percent_helpful'].mean()
+        # update the list of features
+        self.features = [feature for feature in features
+                         if df[df[feature]]['percent_helpful'].mean()
+                         > mean_ph]
+        self.df = df
 
-		# remove duplicates singular-plural, BUT KEEP PLURALS.
-		# i.e. we want 'batteries' not the lemma 'battery'
-		wnl = nltk.WordNetLemmatizer()
-		lemmas = [wnl.lemmatize(word) for word in unigrams]
-		lemma_counts = nltk.FreqDist(lemmas)
-		for word in lemma_counts.keys():
-			if lemma_counts[word] > 1:
-				# just remove the first one
-				i1 = lemmas.index(word)
-				del unigrams[i1]
+    def extract_features(self, category, tokens):
+        # run unigram and phrasal feature extraction
+        unigram_finder = UnigramFinder(category)
+        phrase_finder = PhraseFinder()
 
-		# merge the unigrams and phrases
-		phrase_words = set([word for phrase in phrases for word in phrase])
-		extra_unigrams = set(unigrams) - phrase_words
+        unigrams = unigram_finder.unigrams(tokens)[:self.num_unigrams]
+        phrases = phrase_finder.phrases(tokens)
 
-		# turn phrases into strings incl. stopwords
-		joined_phrases = self.match_phrases(phrases)
-		all_frequent = joined_phrases + list(extra_unigrams)
-		self.all_frequent = all_frequent
-		if len(all_frequent) > 22:
-			all_frequent = all_frequent[:22]
+        # merge unigrams, bigrams and trigrams and flatten phrases
+        all_frequent_features = self.merge(unigrams, phrases, category)
 
-		# record if feature string in review - indexing
-		for obj in reviews:
-			for feature in all_frequent:
-				if feature.lower() in obj['review'].lower(): # ignore case
-					obj[feature] = True
-				else:
-					obj[feature] = False
-			del obj['bigrams']
-			del obj['trigrams']
-			del obj['tokens']
+        # cap the list
+        if len(all_frequent_features) > self.max_features:
+            all_frequent_features = all_frequent_features[:self.max_features]
 
-		# delete for some space saving
-		gc.collect()
+        return all_frequent_features
 
-		# create review df
-		df = pd.DataFrame(reviews)
-		self.meaningful = all_frequent
+    def reviews(self, db, category):
+        """Get reviews from database - return a list of dicts."""
+        reviews = list(db.review.find({'category': category},
+                       {'helpful_votes': 1,
+                        'votes': 1,
+                        'review': 1,
+                        'stars': 1,
+                        'product_id': 1}))
+        return reviews
 
-		# prune for 'not helpful'
-		df['percent_helpful'] = df['helpful_votes']/df['votes']
-		df['percent_helpful'] = df['percent_helpful'].fillna(.5)
-		mean_ph = df['percent_helpful'].mean()
-		self.meaningful = [feature for feature in all_frequent 
-			if df[df[feature]]['percent_helpful'].mean() > mean_ph]
-		self.df = df
+    def parse_reviews(self, reviews):
+        # tokenize each review, add to each review obj IN PLACE
+        for obj in reviews:
+            obj['tokens'] = Reader().tokens(obj['review'])
+            obj['bigrams'] = list(nltk.bigrams(obj['tokens']))
+            obj['trigrams'] = list(nltk.trigrams(obj['tokens']))
+        return reviews
 
-	# LOOK FOR WILDCARDS
-	def match_phrases(self,phrases):
-		joined = []
-		# loop through phrases attempting to find any stopwords or special characters
-		for phrase in phrases:
-			if len(phrase[0]) != 1: # not an abbreviation
-				regex_str = '.{0,10}'.join(phrase)
-			else: # an abbrevation w/ something in the middle
-				regex_str = '[^\w]'.join(phrase)
-			pattern = re.compile(regex_str,re.IGNORECASE)
-			matches = list(self.db.review.find(
-				{'category': self.category,
-				'review': {'$regex': pattern}}))
-			review_strs = []				
-			for el in matches:
-				try:
-					review_strs.append(re.search('(' + regex_str + ')',
-						el['review'],re.IGNORECASE).group(1))
-				except AttributeError:
-					pass
-			# take most frequently said phrase
-			fd = dict(nltk.FreqDist(review_strs))
-			most_popular = sorted(fd.keys(),key=fd.get)[-1]
-			joined.append(most_popular)
-		return joined
+    def join_review_tokens(self, reviews):
+        """Concatenate the words for one product category together"""
+        all_tokens = list()
+        for obj in reviews:
+            all_tokens += obj['tokens']
+        return all_tokens
+
+    def merge(self, unigrams, phrases, category):
+        """Merge the unigrams and phrases."""
+        # remove duplicate lemmas from unigrams
+        unigrams = self.reduce_unigrams(unigrams)
+
+        # turn the phrases into a set of single words
+        phrase_words = set([word for phrase in phrases for word in phrase])
+        # extra unigrams are those not already contained in a phrase.
+        extra_unigrams = set(unigrams) - phrase_words
+
+        # turn phrases into strings incl. stopwords
+        joined_phrases = self.rebuild_phrases(phrases, category)
+
+        # combine single words and phrases
+        all_frequent_features = joined_phrases + list(extra_unigrams)
+        return all_frequent_features
+
+    def reduce_unigrams(self, unigrams):
+        """Remove duplicate lemmas from Unigrams. WARNING CHANGES IN PLACE.
+        Keep plurals - we want batteries not 'battery'"""
+        wnl = nltk.WordNetLemmatizer()
+        lemmas = [wnl.lemmatize(word) for word in unigrams]
+        lemma_counts = nltk.FreqDist(lemmas)
+        for word in lemma_counts.keys():
+            if lemma_counts[word] > 1:
+                # just remove the first one
+                first = lemmas.index(word)
+                del unigrams[first]
+        return unigrams
+
+    def rebuild_phrases(self, phrases, category):
+        """Put the stopwords and special characters back into the phrases
+        which may have been lost during tokenization."""
+
+        joined = []
+        # loop through phrases looking for stopwords or special characters
+        for phrase in phrases:
+            # not an abbreviation
+            if len(phrase[0]) != 1:
+                regex_str = '.{0,10}'.join(phrase)
+            # an abbrevation w/ something in the middle
+            else:
+                regex_str = '[^\w]'.join(phrase)
+
+            pattern = re.compile(regex_str, re.IGNORECASE)
+            matches = list(self.db.review.find(
+                {'category': category, 'review': {'$regex': pattern}}))
+
+            review_strs = []
+            for el in matches:
+                try:
+                    review_strs.append(re.search('(' + regex_str + ')',
+                                       el['review'], re.IGNORECASE).group(1))
+                except AttributeError:
+                    pass
+
+            # take most frequently said phrase
+            fd = dict(nltk.FreqDist(review_strs))
+            most_popular = sorted(fd.keys(), key=fd.get)[-1]
+            joined.append(most_popular)
+
+        return joined

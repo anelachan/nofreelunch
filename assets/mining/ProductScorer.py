@@ -23,8 +23,9 @@ class ProductScorer(object):
 		db = client['nofreelunch']
 
 		# run feature extractor
-		f = FeatureExtraction(category,db)
-		extracted = f.meaningful
+		f = FeatureExtraction(db)
+		f.index(category)
+		extracted = f.features
 		df = f.df
 
 		# update database w/ indexing information
